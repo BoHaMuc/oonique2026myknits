@@ -7,6 +7,7 @@ Kartengenerator für die OONIQUE-Verlosung im Knitplace. Eine einzige Datei (`in
 - Deutsch und Englisch, Umschalter oben rechts. Automatisch nach Browsersprache, erzwingbar mit `?lang=de` oder `?lang=en`.
 - Kennzahlen: FOs, WIPs, UFOs, Testknits, dazu optional Knäuel und Geribbelt (bei 0 nicht auf der Karte).
 - Strick-Typ, der sich aus den Zahlen ergibt (z. B. „UFO-Flotte“, „WIP-Jonglage“), oder frei wählbar.
+- Schriftgröße per Regler von 70 bis 140 %. Beim Vergrößern rücken die Abstände zusammen; wo kein Platz mehr ist, sagt die Seite das.
 - Lieblingsdesigner:in taggen: bis zu drei Instagram-Handles, erscheinen als „Design: @…“ auf der Karte und als @-Markierung in der Caption.
 - Drei Formate: Story 9:16, Beitrag 4:5, transparenter Sticker.
 - Teilen am Handy über das System-Teilen-Menü (Instagram erscheint dort als Ziel). Die Caption liegt dabei schon in der Zwischenablage.

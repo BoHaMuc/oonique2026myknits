@@ -147,6 +147,8 @@ input:focus-visible, button:focus-visible, .chip input:focus-visible + span, .sw
 .stepper input:focus-visible { outline: none; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+input[type="range"] { width: 100%; height: 44px; margin: 0; accent-color: var(--coral); cursor: pointer; }
+label.lbl output { color: var(--coral); margin-left: 6px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .chip input, .sw input { position: absolute; opacity: 0; pointer-events: none; }
 .chip span {
   display: inline-flex; align-items: center; min-height: 42px; padding: 8px 14px; border-radius: 999px;
@@ -326,6 +328,12 @@ body.embed .topbar { justify-content: flex-end; }
       </fieldset>
 
       <fieldset>
+        <label class="lbl" for="size"><span data-i18n="sizeLbl"></span><output id="sizeOut" for="size"></output></label>
+        <input type="range" id="size" min="70" max="140" step="5">
+        <p class="hint" id="sizeHint"></p>
+      </fieldset>
+
+      <fieldset>
         <legend data-i18n="numsLegend"></legend>
         <div class="nums" id="nums"></div>
       </fieldset>
@@ -460,6 +468,9 @@ body.embed .topbar { justify-content: flex-end; }
       appHint: "Tipp: Speichern und Teilen klappt am besten im Browser deines Handys. Kopier dir den Link und öffne ihn in Safari oder Chrome.",
       copyLink: "Link kopieren", copied: "Kopiert",
       exampleNote: "Die Felder sind mit Beispielwerten gefüllt. Einfach überschreiben, die Karte aktualisiert sich sofort.",
+      sizeLbl: "Schriftgröße",
+      sizeHint: "Mit dem Regler machst du Zahlen und Texte auf der Karte kleiner oder größer.",
+      sizeMax: "Größer geht auf dieser Karte nicht, sonst würde etwas abgeschnitten. Mit weniger Feldern oder im Story-Format gibt es mehr Platz.",
       formatLegend: "Format",
       fmt_story: "Story 9:16", fmt_post: "Beitrag 4:5", fmt_sticker: "Sticker (transparent)",
       fmtHint_story: "Hochformat für Story und Reel. Oben und unten bleibt Platz für die Instagram-Bedienelemente.",
@@ -536,6 +547,9 @@ body.embed .topbar { justify-content: flex-end; }
       appHint: "Tip: saving and sharing works best in your phone's browser. Copy the link and open it in Safari or Chrome.",
       copyLink: "Copy link", copied: "Copied",
       exampleNote: "The fields are filled with sample values. Just type over them, the card updates instantly.",
+      sizeLbl: "Text size",
+      sizeHint: "Use the slider to make the numbers and text on the card smaller or larger.",
+      sizeMax: "This card cannot go any bigger without cutting something off. Fewer fields or the story format give you more room.",
       formatLegend: "Format",
       fmt_story: "Story 9:16", fmt_post: "Post 4:5", fmt_sticker: "Sticker (transparent)",
       fmtHint_story: "Portrait format for stories and reels. Space at the top and bottom stays clear for the Instagram controls.",
@@ -659,6 +673,7 @@ body.embed .topbar { justify-content: flex-end; }
     color: /^#[0-9a-f]{6}$/i.test(saved.color || "") ? saved.color : COLORS[0],
     ink: INKS[saved.ink] || saved.ink === "auto" ? saved.ink : "auto",
     panel: saved.panel === "on" ? "on" : "off", photoLum: null,
+    size: (() => { const v = parseInt(saved.size, 10); return isNaN(v) ? 100 : Math.min(140, Math.max(70, Math.round(v / 5) * 5)); })(), capped: false,
     photo: null, photoUrl: "", photoName: "", bounds: null, blob: null, blobVer: 0
   };
 
@@ -700,6 +715,12 @@ body.embed .topbar { justify-content: flex-end; }
     inp.value = String(Math.min(max, Math.max(0, num(btn.dataset.for) + parseInt(btn.dataset.step, 10))));
     onInput();
   });
+
+  const sizeEl = $("size");
+  sizeEl.value = String(state.size);
+  sizeEl.addEventListener("input", () => { state.size = parseInt(sizeEl.value, 10) || 100; updateSizeOut(); persist(); draw(); });
+  function updateSizeOut() { $("sizeOut").textContent = state.size + " %"; }
+  updateSizeOut();
 
   TEXT_FIELDS.forEach((id) => {
     const el = $(id);
@@ -967,6 +988,7 @@ body.embed .topbar { justify-content: flex-end; }
     updateFrame();
     $("fallback").hidden = true;
     $("typeHint").textContent = t("typeHint", { type: t("type_" + autoType()) });
+    $("sizeHint").textContent = t(state.capped ? "sizeMax" : "sizeHint");
     drawThumb();
     scheduleBlob();
   }
@@ -974,6 +996,7 @@ body.embed .topbar { justify-content: flex-end; }
   function renderCard(forExport) {
     const fmt = FORMATS[state.format], full = !fmt.sticker, H = fmt.h, C = W / 2;
     const panel = !full && state.panel === "on";
+    const u = state.size / 100, k = Math.max(1, u); // k: Textbreiten schrumpfen, damit vergrößerte Schrift nicht über den Rand läuft
     const light = full || inkKey() === "white";
     const ink = INKS[light ? "white" : "dark"];
     const knit = LOGOS[light ? "knitLight" : "knitDark"], oo = LOGOS[light ? "ooLight" : "ooDark"];
@@ -1002,12 +1025,12 @@ body.embed .topbar { justify-content: flex-end; }
       ctx.fillStyle = ink.muted; setFont("700", 30, 7); ctx.fillText(title, 3, y + 32);
     } });
     if (handle) blocks.push({ h: 48, gap: 54, draw: (y) => {
-      ctx.fillStyle = ink.fg; setFont("700", 42, 0); ctx.fillText(ellipsize(handle, 900), 0, y + 40);
+      ctx.fillStyle = ink.fg; setFont("700", 42, 0); ctx.fillText(ellipsize(handle, 900 / k), 0, y + 40);
     } });
 
     const type = typeName();
     if (type) {
-      const ts = fitSize(type, "800", 54, 800, 36, -0.02);
+      const ts = fitSize(type, "800", 54, 800 / k, 36, -0.02);
       const pw = ctx.measureText(type).width + 104, ph = 104;
       blocks.push({ h: ph, gap: 58, draw: (y) => {
         ctx.save();
@@ -1028,13 +1051,13 @@ body.embed .topbar { justify-content: flex-end; }
       cells.forEach((id, i) => {
         const cx = (i % 2 ? 1 : -1) * 248, cy = y + Math.floor(i / 2) * (RH + RG), v = String(num(id));
         ctx.fillStyle = ink.fg;
-        fitSize(v, "800", 160, 430, 80, -0.035); ctx.fillText(v, cx, cy + 142);
+        fitSize(v, "800", 160, 430 / k, 80, -0.035); ctx.fillText(v, cx, cy + 142);
         setFont("700", 46, 0.5); ctx.fillText(t("card_" + id), cx, cy + 210);
       });
     } });
     if (extras.length) {
       const line = extras.join("  ·  ");
-      const es = fitSize(line, "700", 44, 960, 30, 0);
+      const es = fitSize(line, "700", 44, 960 / k, 30, 0);
       blocks.push({ h: 54, gap: 62, draw: (y) => {
         ctx.fillStyle = ink.fg; setFont("700", es, 0); ctx.fillText(line, 0, y + 42);
       } });
@@ -1042,8 +1065,8 @@ body.embed .topbar { justify-content: flex-end; }
 
     const fav = $("best").value.trim(), des = designers();
     if (fav) {
-      const fs = fitSize(fav, "800", 76, 940, 54, -0.02);
-      const fl = wrapLines(fav, 940, 2), lh = fs * 1.08;
+      const fs = fitSize(fav, "800", 76, 940 / k, 54, -0.02);
+      const fl = wrapLines(fav, 940 / k, 2), lh = fs * 1.08;
       blocks.push({ h: 72 + fl.length * lh, gap: des.length ? 20 : 62, draw: (y) => {
         ctx.fillStyle = ink.muted; setFont("700", 40, 0); ctx.fillText(t("cardFav"), 0, y + 40);
         ctx.fillStyle = ink.fg; setFont("800", fs, -0.02 * fs);
@@ -1053,14 +1076,14 @@ body.embed .topbar { justify-content: flex-end; }
 
     if (des.length) {
       const dl = t("cardDesigner") + " " + des.join(" ");
-      const ds = fitSize(dl, "700", 42, 940, 26, 0);
+      const ds = fitSize(dl, "700", 42, 940 / k, 26, 0);
       blocks.push({ h: 52, gap: 62, draw: (y) => {
-        ctx.fillStyle = ink.fg; setFont("700", ds, 0); ctx.fillText(ellipsize(dl, 940), 0, y + 40);
+        ctx.fillStyle = ink.fg; setFont("700", ds, 0); ctx.fillText(ellipsize(dl, 940 / k), 0, y + 40);
       } });
     }
 
     blocks.push({ h: 54, gap: 56, draw: (y) => {
-      ctx.fillStyle = ink.fg; fitSize(CONFIG.hashtag, "800", 48, 940, 30, 0); ctx.fillText(CONFIG.hashtag, 0, y + 44);
+      ctx.fillStyle = ink.fg; fitSize(CONFIG.hashtag, "800", 48, 940 / k, 30, 0); ctx.fillText(CONFIG.hashtag, 0, y + 44);
     } });
 
     const KW = 430, KH = KW * 244 / 900, OW = 176, OH = OW * 127 / 640;
@@ -1069,18 +1092,32 @@ body.embed .topbar { justify-content: flex-end; }
       if (oo) { ctx.globalAlpha = 0.92; ctx.drawImage(oo, -OW / 2, y, OW, OH); ctx.globalAlpha = 1; }
     } });
 
-    const total = blocks.reduce((a, b) => a + b.h + b.gap, 0);
-    const avail = H - fmt.top - fmt.bottom;
-    const s = Math.min(1, avail / total);
+    const sumH = blocks.reduce((a, b) => a + b.h, 0), sumG = blocks.reduce((a, b) => a + b.gap, 0);
+    const avail = H - fmt.top - fmt.bottom, natural = sumH + sumG;
+    // Größe: unter 100 % einfach verkleinern. Darüber zuerst Platz schaffen, indem die Abstände zwischen den Blöcken
+    // bis auf 40 % zusammenrücken, und nur wenn auch das nicht reicht, bleibt die Schrift bei der größten passenden Größe.
+    const MING = 0.4;
+    let s, g = 1;
+    if (u <= 1) {
+      s = u * Math.min(1, avail / natural);
+    } else if (natural * u <= avail) {
+      s = u;
+    } else {
+      const need = (avail / u - sumH) / sumG;
+      if (need >= MING) { s = u; g = need; }
+      else { g = MING; s = Math.max(avail / (sumH + MING * sumG), Math.min(1, avail / natural)); }
+    }
+    state.capped = u > 1 && s < u - 0.001;
+    const total = sumH + g * sumG;
     const y0 = fmt.top + (avail - total * s) / 2;
 
     ctx.save();
     ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
     ctx.translate(C, y0); ctx.scale(s, s);
-    if (panel) { ctx.fillStyle = ink.panel; roundRect(-500, -70, 1000, total + 140, 64); ctx.fill(); }
+    if (panel) { ctx.fillStyle = ink.panel; { const pw = Math.min(1000, (W - 40) / s); roundRect(-pw / 2, -70, pw, total + 140, 64); }; ctx.fill(); }
     else { ctx.shadowColor = ink.shadow; ctx.shadowBlur = full ? 14 : 18; ctx.shadowOffsetY = 1; }
     let y = 0;
-    blocks.forEach((b) => { b.draw(y); y += b.h + b.gap; });
+    blocks.forEach((b) => { b.draw(y); y += b.h + b.gap * g; });
     if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
     ctx.restore();
 
@@ -1226,7 +1263,7 @@ body.embed .topbar { justify-content: flex-end; }
 
   /* ---------- Merken & Aktualisieren ---------- */
   function persist() {
-    const data = { lang: state.lang, format: state.format, type: state.type, color: state.color, ink: state.ink, panel: state.panel };
+    const data = { lang: state.lang, format: state.format, type: state.type, color: state.color, ink: state.ink, panel: state.panel, size: state.size };
     NUM_FIELDS.forEach((f) => { data[f.id] = num(f.id); });
     TEXT_FIELDS.forEach((id) => { data[id] = $(id).value; });
     store(false, data);
