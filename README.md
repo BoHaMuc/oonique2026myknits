@@ -2,6 +2,14 @@
 
 Kartengenerator für die OONIQUE-Verlosung im Knitplace. Eine einzige Datei (`index.html`), ohne Build, ohne Server, ohne Tracking. Schriften und Logos sind eingebettet.
 
+## Editor (Instagram-Ansicht)
+
+- Standard-Hintergrund ist ein Beispielfoto (WIP auf der Nadel). Eigenes Foto wählen ersetzt es.
+- Vorschau im Story-Rahmen (oder Feed-Beitrag beim Format "Post"). Die Instagram-Elemente sind nur Ansicht und nicht im exportierten Bild. Abschaltbar über "Instagram-Ansicht".
+- "Text bewegen": Ziehen verschiebt den Text, zwei Finger (Computer: Strg + Scrollrad) skalieren ihn.
+- "Foto bewegen": Ziehen verschiebt das Foto, zwei Finger zoomen. Zusätzlich Regler für Foto-Zoom und Schriftgröße, Pfeiltasten und +/- bei fokussierter Vorschau.
+- "Zurücksetzen" stellt Position, Zoom und Größe zurück.
+
 ## Was die Seite kann
 
 - Deutsch und Englisch, Umschalter oben rechts. Automatisch nach Browsersprache, erzwingbar mit `?lang=de` oder `?lang=en`.
